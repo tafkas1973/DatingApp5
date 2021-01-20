@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Api.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Api.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api.Controllers
 {
