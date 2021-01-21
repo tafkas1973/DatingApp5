@@ -5,6 +5,7 @@ using Api.DTOs;
 using Api.Entities;
 using Api.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Office4U.Articles.ImportExport.Api.Helpers;
 
 namespace Api.Data
 {
@@ -28,11 +29,16 @@ namespace Api.Data
                 .SingleOrDefaultAsync(u => u.UserName == username);
         }
 
-        public async Task<IEnumerable<AppUser>> GetUsersAsync()
+        public async Task<PagedList<AppUser>> GetUsersAsync(UserParams userParams)
         {
-            return await _context.Users
+            var users = _context.Users
                 .Include(u => u.Photos)
-                .ToListAsync();
+                .AsQueryable();
+
+            return await PagedList<AppUser>.CreateAsync(
+                users, 
+                userParams.PageNumber, 
+                userParams.PageSize);
         }
 
         public async Task<bool> SaveAllAsync()

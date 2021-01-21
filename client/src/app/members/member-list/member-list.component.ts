@@ -1,6 +1,6 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Component, OnInit } from '@angular/core';
+import { Subject } from 'rxjs';
+import { Pagination } from 'src/app/_models/Pagination';
 
 import { Member } from '../../_models/member';
 import { MembersService } from '../../_services/members.service';
@@ -10,18 +10,30 @@ import { MembersService } from '../../_services/members.service';
   templateUrl: './member-list.component.html',
   styleUrls: ['./member-list.component.css']
 })
-export class MemberListComponent implements OnInit, OnDestroy {
-  members$: Observable<Array<Member>>;
+export class MemberListComponent implements OnInit {
+  members: Array<Member>;
+  pagination: Pagination;
+  pageNumber = 1;
+  pageSize = 5;
 
   constructor(private memberService: MembersService) { }
   private notifier = new Subject();
 
   ngOnInit(): void {
-    this.members$ = this.memberService.getMembers();
+    this.loadMembers();
   }
 
-  ngOnDestroy() {
-    this.notifier.next();
-    this.notifier.complete();
+  loadMembers() {
+    this.memberService
+      .getMembers(this.pageNumber, this.pageSize)
+      .subscribe(response => {
+        this.members = response.result;
+        this.pagination = response.pagination;
+      });
+  }
+
+  pageChanged(event: any) {
+    this.pageNumber = event.page;
+    this.loadMembers();
   }
 }
