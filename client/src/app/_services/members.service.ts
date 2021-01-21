@@ -5,7 +5,7 @@ import { of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Member } from '../_models/member';
-import { PaginatedResult } from '../_models/Pagination';
+import { PaginatedResult } from '../_models/pagination';
 
 @Injectable({
   providedIn: 'root'

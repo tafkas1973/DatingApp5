@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Subject } from 'rxjs';
-import { Pagination } from 'src/app/_models/Pagination';
+import { Pagination } from 'src/app/_models/pagination';
 
 import { Member } from '../../_models/member';
 import { MembersService } from '../../_services/members.service';
