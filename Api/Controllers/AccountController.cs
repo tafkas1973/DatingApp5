@@ -8,6 +8,7 @@ using Api.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using AutoMapper;
 
 namespace Api.Controllers
 {
@@ -15,65 +16,69 @@ namespace Api.Controllers
     {
         private readonly DataContext _context;
         private readonly ITokenService _tokenService;
+        private readonly IMapper _mapper;
         public AccountController(
             DataContext context,
-            ITokenService tokenService)
+            ITokenService tokenService,
+            IMapper mapper)
         {
             _tokenService = tokenService;
             _context = context;
+            _mapper = mapper;
         }
 
-    [HttpPost("register")]
-    public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
-    {
-        if (await UserExists(registerDto.Username)) return BadRequest("Username already exists");
-
-        using var hmac = new HMACSHA512();
-
-        var user = new AppUser
+        [HttpPost("register")]
+        public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
         {
-            UserName = registerDto.Username.ToLower(),
-            PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDto.Password)),
-            PasswordSalt = hmac.Key
-        };
+            if (await UserExists(registerDto.Username)) return BadRequest("Username already exists");
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+            var user = _mapper.Map<AppUser>(registerDto);
 
-        return new UserDto
-        {
-            Username = user.UserName,
-            Token = _tokenService.CreateToken(user)
-        };
-    }
+            using var hmac = new HMACSHA512();
 
-    private async Task<bool> UserExists(string username)
-    {
-        return await _context.Users.AnyAsync(u => u.UserName == username.ToLower());
-    }
+            user.UserName = registerDto.Username.ToLower();
+            user.PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDto.Password));
+            user.PasswordSalt = hmac.Key;
 
-    [HttpPost("login")]
-    public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
-    {
-        var dbUser = await _context.Users
-            .SingleOrDefaultAsync(u => u.UserName == loginDto.Username);
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
-        if (dbUser == null) return Unauthorized("Invalid username");
-
-        using var hmac = new HMACSHA512(dbUser.PasswordSalt);
-
-        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDto.Password));
-
-        for (int i = 0; i < computedHash.Length; i++)
-        {
-            if (computedHash[i] != dbUser.PasswordHash[i]) return Unauthorized("Invalid password");
+            return new UserDto
+            {
+                Username = user.UserName,
+                Token = _tokenService.CreateToken(user),
+                KnownAs = user.KnownAs
+            };
         }
 
-        return new UserDto
+        private async Task<bool> UserExists(string username)
         {
-            Username = dbUser.UserName,
-            Token = _tokenService.CreateToken(dbUser)
-        };
+            return await _context.Users.AnyAsync(u => u.UserName == username.ToLower());
+        }
+
+        [HttpPost("login")]
+        public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
+        {
+            var dbUser = await _context.Users
+                .SingleOrDefaultAsync(u => u.UserName == loginDto.Username);
+
+            if (dbUser == null) return Unauthorized("Invalid username");
+
+            using var hmac = new HMACSHA512(dbUser.PasswordSalt);
+
+            var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDto.Password));
+
+            for (int i = 0; i < computedHash.Length; i++)
+            {
+                if (computedHash[i] != dbUser.PasswordHash[i]) return Unauthorized("Invalid password");
+            }
+
+            return new UserDto
+            {
+                Username = dbUser.UserName,
+                Token = _tokenService.CreateToken(dbUser),
+                KnownAs = dbUser.KnownAs
+            };
+        }
     }
-}
 }
