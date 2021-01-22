@@ -47,7 +47,8 @@ namespace Api.Controllers
             {
                 Username = user.UserName,
                 Token = _tokenService.CreateToken(user),
-                KnownAs = user.KnownAs
+                KnownAs = user.KnownAs,
+                Gender = user.Gender
             };
         }
 
@@ -77,7 +78,8 @@ namespace Api.Controllers
             {
                 Username = dbUser.UserName,
                 Token = _tokenService.CreateToken(dbUser),
-                KnownAs = dbUser.KnownAs
+                KnownAs = dbUser.KnownAs,
+                Gender = dbUser.Gender
             };
         }
     }

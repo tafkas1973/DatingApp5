@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using Api.DTOs;
 using Api.Interfaces;
+using API.Extensions;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,8 +28,15 @@ namespace Api.Controllers
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers(
-            [FromQuery]UserParams userParams)
+            [FromQuery] UserParams userParams)
         {
+            var user = await _userRepository.GetUserByUsernameAsync(User.GetUsername());
+            userParams.CurrentUsername = user.UserName;
+
+            if (string.IsNullOrEmpty(userParams.Gender))
+            {
+                userParams.Gender = user.Gender == "male" ? "female" : "male";
+            }
             var users = await _userRepository.GetUsersAsync(userParams);
 
             var usersToReturn = _mapper.Map<IEnumerable<MemberDto>>(users);

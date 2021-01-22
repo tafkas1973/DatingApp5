@@ -1,7 +1,6 @@
-using System.Collections.Generic;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Api.DTOs;
 using Api.Entities;
 using Api.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -31,14 +30,41 @@ namespace Api.Data
 
         public async Task<PagedList<AppUser>> GetUsersAsync(UserParams userParams)
         {
-            var users = _context.Users
+            var query = _context.Users
                 .Include(u => u.Photos)
                 .AsQueryable();
 
+            query = FilterQuery(userParams, query);
+
+            query = OrderQuery(userParams, query);
+
             return await PagedList<AppUser>.CreateAsync(
-                users, 
-                userParams.PageNumber, 
+                query,
+                userParams.PageNumber,
                 userParams.PageSize);
+        }
+
+        private static IQueryable<AppUser> FilterQuery(UserParams userParams, IQueryable<AppUser> query)
+        {
+            query = query.Where(u => u.UserName != userParams.CurrentUsername);
+
+            query = query.Where(u => u.Gender == userParams.Gender);
+
+            var minDob = DateTime.Today.AddYears(-userParams.MaxAge - 1);
+            var maxDob = DateTime.Today.AddYears(-userParams.MinAge);
+            query = query.Where(u => u.DateOfBirth >= minDob && u.DateOfBirth <= maxDob);
+
+            return query;
+        }
+
+        private static IQueryable<AppUser> OrderQuery(UserParams userParams, IQueryable<AppUser> query)
+        {
+            query = userParams.OrderBy switch
+            {
+                "created" => query.OrderByDescending(u => u.Created),
+                _ => query.OrderByDescending(u => u.LastActive)
+            };
+            return query;
         }
 
         public async Task<bool> SaveAllAsync()
