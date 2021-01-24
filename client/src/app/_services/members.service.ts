@@ -15,6 +15,7 @@ import { AccountService } from './account.service';
 })
 export class MembersService {
   baseUrl = environment.apiUrl;
+  members: Member[] = [];
   memberCache = new Map();
   userParams: UserParams;
   user: User;

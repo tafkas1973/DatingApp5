@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Security.Claims;
-using System.Security.Principal;
 using System.Threading.Tasks;
 using Api.DTOs;
 using Api.Interfaces;
@@ -28,7 +27,7 @@ namespace Api.Controllers
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers(
-            [FromQuery] UserParams userParams)
+                   [FromQuery] UserParams userParams)
         {
             var user = await _userRepository.GetUserByUsernameAsync(User.GetUsername());
             userParams.CurrentUsername = user.UserName;
@@ -65,9 +64,11 @@ namespace Api.Controllers
         [HttpPut]
         public async Task<ActionResult> UpdateUser(MemberUpdateDto memberUpdateDto)
         {
-            var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
             var user = await _userRepository.GetUserByUsernameAsync(username);
+
+            //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            //var user = await _userRepository.GetUserByIdAsync(int.Parse(userId));
 
             _mapper.Map(memberUpdateDto, user);
 
