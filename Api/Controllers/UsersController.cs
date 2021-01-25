@@ -15,28 +15,28 @@ namespace Api.Controllers
     [Authorize]
     public class UsersController : BaseApiController
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         public UsersController(
-            IUserRepository userRepository,
+            IUnitOfWork unitOfWork,
             IMapper mapper)
         {
             _mapper = mapper;
-            _userRepository = userRepository;
+            _unitOfWork = unitOfWork;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers(
                    [FromQuery] UserParams userParams)
         {
-            var user = await _userRepository.GetUserByUsernameAsync(User.GetUsername());
+            var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUsername());
             userParams.CurrentUsername = user.UserName;
 
             if (string.IsNullOrEmpty(userParams.Gender))
             {
                 userParams.Gender = user.Gender == "male" ? "female" : "male";
             }
-            var users = await _userRepository.GetUsersAsync(userParams);
+            var users = await _unitOfWork.UserRepository.GetUsersAsync(userParams);
 
             var usersToReturn = _mapper.Map<IEnumerable<MemberDto>>(users);
 
@@ -54,7 +54,7 @@ namespace Api.Controllers
         [HttpGet("{username}")]
         public async Task<ActionResult<MemberDto>> GetUser(string username)
         {
-            var user = await _userRepository.GetUserByUsernameAsync(username);
+            var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(username);
 
             var userToReturn = _mapper.Map<MemberDto>(user);
 
@@ -65,16 +65,16 @@ namespace Api.Controllers
         public async Task<ActionResult> UpdateUser(MemberUpdateDto memberUpdateDto)
         {
             var username = User.FindFirst(ClaimTypes.Name)?.Value;
-            var user = await _userRepository.GetUserByUsernameAsync(username);
+            var user = await _unitOfWork.UserRepository.GetUserByUsernameAsync(username);
 
             //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             //var user = await _userRepository.GetUserByIdAsync(int.Parse(userId));
 
             _mapper.Map(memberUpdateDto, user);
 
-            _userRepository.Update(user);
+            _unitOfWork.UserRepository.Update(user);
 
-            if (await _userRepository.SaveAllAsync()) return NoContent();
+            if (await _unitOfWork.Complete()) return NoContent();
 
             return BadRequest("Failed to update user");
         }
